@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lentera Akademik</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="loading" class="loading d-none"><div class="spinner-border text-primary"></div></div>
+
+  <!-- Login -->
+  <div id="loginView" class="login-wrap">
+    <div class="card-x login-card">
+      <div class="brand mb-3"><span class="logoBox"><i class="bi bi-mortarboard-fill"></i></span>
+        <div><h5 class="mb-0 appName">Lentera Akademik</h5><small class="muted">e-Raport &amp; Penilaian</small></div></div>
+      <label class="form-label">Username</label>
+      <input id="lgUser" class="form-control mb-2" autocomplete="username">
+      <label class="form-label">Password</label>
+      <input id="lgPass" type="password" class="form-control mb-3" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="btn btn-primary w-100" onclick="doLogin()">Masuk</button>
+    </div>
+  </div>
+
+  <!-- Aplikasi -->
+  <div id="appView" class="d-none">
+    <nav id="sidebar" class="sidebar">
+      <div class="brand p-3"><span class="logoBox"><i class="bi bi-mortarboard-fill"></i></span>
+        <div><b class="appName">Lentera Akademik</b><br><small id="schoolName" class="muted"></small></div></div>
+      <ul id="menu" class="menu"></ul>
+      <div class="p-3 mt-auto">
+        <div id="userBox" class="small mb-2"></div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="toggleDark()"><i class="bi bi-moon-stars"></i></button>
+          <button class="btn btn-sm btn-outline-danger flex-fill" onclick="doLogout()">Keluar</button>
+        </div>
+      </div>
+    </nav>
+    <header class="topbar"><button class="btn" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list fs-4"></i></button><b id="pageTitle">Dashboard</b></header>
+    <main class="main">
+      <section id="sec-dashboard" class="sec"></section>
+      <section id="sec-nilai" class="sec"></section>
+      <section id="sec-wali" class="sec"></section>
+      <section id="sec-rekap" class="sec"></section>
+      <section id="sec-raport" class="sec"></section>
+      <section id="sec-master" class="sec"></section>
+      <section id="sec-guru" class="sec"></section>
+      <section id="sec-app" class="sec"></section>
+    </main>
+  </div>
+
+  <!-- Modal form master -->
+  <div class="modal fade" id="formModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h6 class="modal-title" id="formTitle"></h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body" id="formBody"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-primary" onclick="submitForm()">Simpan</button></div>
+  </div></div></div>
+
+  <!-- Modal konfirmasi hapus -->
+  <div class="modal fade" id="delModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-body">Yakin ingin menghapus data ini?</div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-danger" id="delBtn">Hapus</button></div>
+  </div></div></div>
+
+  <!-- Modal pratinjau raport -->
+  <div class="modal fade" id="prevModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header"><h6 class="modal-title">Pratinjau Raport (A4)</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><div id="prevBody"></div></div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button><span id="pdfLink" class="me-auto small"></span><button class="btn btn-outline-primary" id="pdfBtn" onclick="pdfDrive()"><i class="bi bi-cloud-upload"></i> Simpan PDF ke Drive</button><button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Simpan PDF</button></div>
+  </div></div></div>
+
+  <nav id="bnav"></nav>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3"><div id="toast" class="toast"><div class="toast-body" id="toastBody"></div></div></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
