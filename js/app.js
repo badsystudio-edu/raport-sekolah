@@ -54,7 +54,9 @@ function meta() { // filter -> objek; semester diambil dari tahun ajaran yang di
 // -- Dashboard --
 async function viewDash() {
   const r = await call('getDashboard', TOKEN); if (!r.success) return; const d = r.data;
-  $('sec-dashboard').innerHTML = `<div class="hero mb-3"><div class="small opacity-75">Selamat datang kembali</div><h4 class="mb-0">${esc(USER.nama)}</h4></div><div class="row g-3 my-1">
+  const gInfo = USER.guruId ? (OPSI.guru || []).find(x => x.ID === USER.guruId) : null;
+  const avatar = gInfo && gInfo.foto ? `<img src="${esc(gInfo.foto)}" class="hero-avatar">` : '';
+  $('sec-dashboard').innerHTML = `<div class="hero mb-3 d-flex align-items-center gap-3">${avatar}<div><div class="small opacity-75">Selamat datang kembali</div><h4 class="mb-0">${esc(USER.nama)}</h4></div></div><div class="row g-3 my-1">
     ${[['Siswa', d.siswa], ['Guru', d.guru], ['Kelas', d.kelas], ['Data Nilai', d.nilai]].map(k => `<div class="col-6 col-lg-3"><div class="card-x"><div class="muted">${k[0]}</div><div class="kpi">${k[1]}</div></div></div>`).join('')}</div>
     <div class="card-x mt-3"><h6>Rata-rata Nilai per Kelas</h6><canvas id="cDash" height="110"></canvas></div>`;
   drawChart('cDash', d.perKelas.map(x => x.kelas), d.perKelas.map(x => x.rata), 'Rata-rata');
@@ -121,9 +123,13 @@ async function loadRekap() {
   window._rekap = d; window._rekapM = m;
 }
 const kelasNama = id => ((OPSI.kelas || []).find(k => k.ID === id) || {}).nama || '';
+function kopHtml(p) { // kop raport: pakai gambar unggahan Admin jika ada, atau fallback logo+teks
+  if (p.kopUrl) return `<img src="${esc(p.kopUrl)}" style="width:100%;display:block;margin-bottom:6px">`;
+  return `${p.logoUrl ? `<img src="${esc(p.logoUrl)}" style="height:60px;float:left">` : ''}<b style="font-size:16px">${esc((p.nama || '').toUpperCase())}</b><br>${esc(p.alamat)} * ${esc(p.kontak)}`;
+}
 function printRekap() {
   const d = window._rekap, m = window._rekapM, p = d.profil;
-  $('prevBody').innerHTML = `<div class="raport" style="max-width:none"><div class="kop"><b style="font-size:15px">${esc((p.nama || '').toUpperCase())}</b><br>${esc(p.alamat)}</div><h6 class="text-center my-2">LEGER NILAI ${esc(m.ujian)} - KELAS ${esc(kelasNama(m.kelasId))} - ${esc(m.ta)} ${esc(m.semester)}</h6>` + $('rekapTbl').innerHTML + `<table style="border:0;margin-top:24px;width:60%;margin-left:auto"><tr style="text-align:center"><td style="border:0">Wali Kelas<br><br><br>(................)</td><td style="border:0">Kepala Sekolah<br><br><br><u>${esc(p.kepsek)}</u><br>NIP. ${esc(p.nip)}</td></tr></table></div>`;
+  $('prevBody').innerHTML = `<div class="raport" style="max-width:none"><div class="kop">${kopHtml(p)}</div><h6 class="text-center my-2">LEGER NILAI ${esc(m.ujian)} - KELAS ${esc(kelasNama(m.kelasId))} - ${esc(m.ta)} ${esc(m.semester)}</h6>` + $('rekapTbl').innerHTML + `<table style="border:0;margin-top:24px;width:60%;margin-left:auto"><tr style="text-align:center"><td style="border:0">Wali Kelas<br><br><br>(................)</td><td style="border:0">Kepala Sekolah<br><br><br><u>${esc(p.kepsek)}</u><br>NIP. ${esc(p.nip)}</td></tr></table></div>`;
   window._land = true; $('pdfBtn').style.display = 'none'; $('pdfLink').innerHTML = ''; bootstrap.Modal.getOrCreateInstance($('prevModal')).show();
 }
 function exportLeger() {
@@ -156,7 +162,7 @@ const predikat = (n, p) => n >= (Number(p.batasA) || 90) ? 'A' : n >= (Number(p.
 function renderRaport() {
   const { d, m } = window._rap, p = d.profil, sid = $('rapSiswa').value, foto = $('rapFoto').checked, enc = encodeURIComponent;
   const rows = b => { let g = ''; return d.mapel.map((x, j) => { const n = b.nilai[j], h = x.kelompok && x.kelompok !== g ? `<tr><td colspan="7"><b>${esc(x.kelompok)}</b></td></tr>` : ''; g = x.kelompok || g; return h + `<tr><td>${j + 1}</td><td>${esc(x.nama)}</td><td>${x.KKM}</td><td>${n === null ? '-' : n}</td><td>${n === null ? '' : terbilang(n)}</td><td>${n === null ? '-' : predikat(n, p)}</td><td>${n === null ? '-' : n >= x.KKM ? 'Tuntas' : 'Belum Tuntas'}</td></tr>`; }).join(''); };
-  $('prevBody').innerHTML = d.baris.filter(b => !sid || b.siswa.ID === sid).map(b => `<div class="raport"><div class="kop">${p.logoUrl ? `<img src="${esc(p.logoUrl)}" style="height:60px;float:left">` : ''}<b style="font-size:16px">${esc((p.nama || '').toUpperCase())}</b><br>${esc(p.alamat)} * ${esc(p.kontak)}</div>
+  $('prevBody').innerHTML = d.baris.filter(b => !sid || b.siswa.ID === sid).map(b => `<div class="raport"><div class="kop">${kopHtml(p)}</div>
   <div class="text-center mb-2"><b>LAPORAN PENILAIAN HASIL BELAJAR<br>${esc(m.ujian)} SEMESTER ${esc(m.semester)} - ${esc(m.ta)}</b></div>
   <p>${foto && b.siswa.foto ? `<img src="${esc(b.siswa.foto)}" style="height:80px;float:right;margin-left:8px">` : ''}Nama: <b>${esc(b.siswa.nama)}</b> &nbsp; NIS/NISN: ${esc(b.siswa.NIS)} / ${esc(b.siswa.NISN)}</p>
   <table><thead><tr><th>No</th><th>Mata Pelajaran</th><th>KKM</th><th>Nilai</th><th>Terbilang</th><th>Huruf</th><th>Ket.</th></tr></thead><tbody>${rows(b)}
@@ -253,12 +259,14 @@ function askDel(id) {
 // -- Branding, gambar, pengaturan aplikasi --
 let BRAND = {};
 function applyBrand(p) {
-  BRAND = p || BRAND; const nm = BRAND.namaApp || 'Lentera Akademik';
+  BRAND = Object.assign({}, BRAND, p || {}); const nm = BRAND.namaApp || 'Lentera Akademik';
   document.querySelectorAll('.appName').forEach(e => e.textContent = nm);
   document.querySelectorAll('.logoBox').forEach(e => e.innerHTML = BRAND.logoUrl ? `<img src="${esc(BRAND.logoUrl)}" alt="">` : '<i class="bi bi-mortarboard-fill"></i>');
   if ($('schoolName')) $('schoolName').textContent = BRAND.nama || ''; document.title = nm;
+  if (BRAND.bgUrl) { document.body.style.backgroundImage = `url("${BRAND.bgUrl}")`; document.body.classList.add('has-bg'); }
+  else { document.body.style.backgroundImage = ''; document.body.classList.remove('has-bg'); }
 }
-function imgToData(file, max) { // kecilkan gambar di browser agar muat di sel Sheets
+function imgToData(file, max) { // kecilkan gambar di browser agar muat di sel Sheets (logo, foto orang)
   return new Promise((ok, bad) => {
     const im = new Image(), u = URL.createObjectURL(file);
     im.onload = () => {
@@ -271,18 +279,57 @@ function imgToData(file, max) { // kecilkan gambar di browser agar muat di sel S
     im.onerror = bad; im.src = u;
   });
 }
+function fileToResizedBlob(file, maxDim, quality) { // untuk kop/background: disimpan di Drive, boleh lebih besar & lebih tajam
+  return new Promise((ok, bad) => {
+    const im = new Image(), u = URL.createObjectURL(file);
+    im.onload = () => {
+      const s = Math.min(1, maxDim / Math.max(im.width, im.height)), c = document.createElement('canvas');
+      c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u);
+      c.toBlob(blob => {
+        const fr = new FileReader();
+        fr.onload = () => ok({ b64: fr.result.split(',')[1], mime: 'image/jpeg' });
+        fr.onerror = bad; fr.readAsDataURL(blob);
+      }, 'image/jpeg', quality || 0.85);
+    };
+    im.onerror = bad; im.src = u;
+  });
+}
+async function uploadBigImage(kind, file, maxDim) { // kind: 'kop' atau 'bg'
+  const { b64, mime } = await fileToResizedBlob(file, maxDim, kind === 'bg' ? 0.82 : 0.9);
+  return call('uploadImage', TOKEN, kind, b64, mime, file.name);
+}
 async function viewApp() {
-  const r = await call('listData', TOKEN, 'ProfilSekolah'), p = (r.data && r.data.rows[0]) || {}; window._logo = p.logoUrl || '';
+  const r = await call('listData', TOKEN, 'ProfilSekolah'), p = (r.data && r.data.rows[0]) || {};
+  window._logo = p.logoUrl || ''; window._kop = p.kopUrl || ''; window._bg = p.bgUrl || '';
   const F = [['namaApp', 'Nama Aplikasi'], ['nama', 'Nama Sekolah'], ['npsn', 'NPSN'], ['alamat', 'Alamat'], ['kontak', 'Kontak'], ['kepsek', 'Nama Kepala Sekolah'], ['nip', 'NIP Kepala Sekolah'], ['batasA', 'Batas Predikat A (nilai >=)'], ['batasB', 'Batas Predikat B (nilai >=)'], ['batasC', 'Batas Predikat C (nilai >=)']];
-  $('sec-app').innerHTML = `<h5>Pengaturan Aplikasi</h5><div class="card-x"><div class="row g-3"><div class="col-md-4 text-center"><div id="logoPrev" class="mb-2"></div><label class="btn btn-outline-primary btn-sm">Ganti Logo<input type="file" hidden accept="image/*" onchange="pickLogo(this)"></label><div class="muted small mt-1">Logo dikecilkan otomatis. Tampil di menu, halaman login, dan kop raport.</div></div><div class="col-md-8">${F.map(f => `<label class="form-label mt-1">${f[1]}</label><input class="form-control" data-p="${f[0]}" value="${esc(p[f[0]])}">`).join('')}<label class="form-label mt-2">Tahun Ajaran Aktif</label>${sel('pTa', OPSI.ta || [], '- pilih -')}<label class="form-label mt-2">Jenis Ujian Aktif</label>${sel('pUj', OPSI.ujian || [], '- pilih -')}<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="pFoto"> <label class="form-check-label" for="pFoto">Tampilkan foto siswa di raport (bawaan)</label></div><div class="muted small">Filter Tahun Ajaran &amp; Jenis Ujian akan terisi otomatis sesuai pilihan ini.</div><button class="btn btn-primary mt-3" onclick="saveApp()">Simpan Pengaturan</button></div></div></div>`;
-  showLogoPrev(); $('pTa').value = p.taAktif || ''; $('pUj').value = p.ujianAktif || ''; $('pFoto').checked = p.fotoRaport !== 'N';
+  $('sec-app').innerHTML = `<h5>Pengaturan Aplikasi</h5><div class="card-x"><div class="row g-3"><div class="col-md-4 text-center"><div id="logoPrev" class="mb-2"></div><label class="btn btn-outline-primary btn-sm">Ganti Logo<input type="file" hidden accept="image/*" onchange="pickLogo(this)"></label><div class="muted small mt-1">Logo dikecilkan otomatis. Tampil di menu, halaman login, dan kop raport (jika Kop Raport di bawah tidak diisi).</div></div><div class="col-md-8">${F.map(f => `<label class="form-label mt-1">${f[1]}</label><input class="form-control" data-p="${f[0]}" value="${esc(p[f[0]])}">`).join('')}<label class="form-label mt-2">Tahun Ajaran Aktif</label>${sel('pTa', OPSI.ta || [], '- pilih -')}<label class="form-label mt-2">Jenis Ujian Aktif</label>${sel('pUj', OPSI.ujian || [], '- pilih -')}<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="pFoto"> <label class="form-check-label" for="pFoto">Tampilkan foto siswa di raport (bawaan)</label></div><div class="muted small">Filter Tahun Ajaran &amp; Jenis Ujian akan terisi otomatis sesuai pilihan ini.</div><button class="btn btn-primary mt-3" onclick="saveApp()">Simpan Pengaturan</button></div></div>
+  <hr class="my-4">
+  <div class="row g-3">
+    <div class="col-md-6 text-center"><label class="form-label d-block text-start">Kop Raport (gambar, menggantikan nama sekolah bertulis)</label><div id="kopPrev" class="mb-2"></div><label class="btn btn-outline-primary btn-sm">Unggah Kop<input type="file" hidden accept="image/*" onchange="pickKop(this)"></label> <button class="btn btn-outline-secondary btn-sm" onclick="removeImg('kop')">Hapus</button><div class="muted small mt-1">Sebaiknya gambar lebar (mis. 1500x300px) berisi logo yayasan, nama sekolah, dan alamat lengkap. Akan tercetak penuh di bagian atas raport.</div></div>
+    <div class="col-md-6 text-center"><label class="form-label d-block text-start">Background Aplikasi (opsional)</label><div id="bgPrev" class="mb-2"></div><label class="btn btn-outline-primary btn-sm">Unggah Background<input type="file" hidden accept="image/*" onchange="pickBg(this)"></label> <button class="btn btn-outline-secondary btn-sm" onclick="removeImg('bg')">Hapus</button><div class="muted small mt-1">Tampil di balik halaman login dan seluruh aplikasi dengan efek kaca (glass). Pilih foto yang tidak terlalu ramai agar teks tetap jelas dibaca.</div></div>
+  </div></div>`;
+  showLogoPrev(); showImgPrev('kop'); showImgPrev('bg'); $('pTa').value = p.taAktif || ''; $('pUj').value = p.ujianAktif || ''; $('pFoto').checked = p.fotoRaport !== 'N';
   $('sec-app').insertAdjacentHTML('beforeend', '<div id="urutBox"></div>'); loadUrutan();
 }
 function showLogoPrev() { $('logoPrev').innerHTML = window._logo ? `<img src="${esc(window._logo)}" style="max-width:120px;max-height:120px">` : '<i class="bi bi-image fs-1 muted"></i>'; }
 async function pickLogo(i) { const f = i.files[0]; if (!f) return; try { window._logo = await imgToData(f, 200); showLogoPrev(); } catch (e) { toast('Logo tidak dapat dibaca atau terlalu besar.', 'danger'); } }
+function showImgPrev(kind) { const el = $(kind + 'Prev'), url = window['_' + kind]; el.innerHTML = url ? `<img src="${esc(url)}" class="img-prev">` : '<i class="bi bi-image fs-1 muted"></i>'; }
+async function pickKop(i) {
+  const f = i.files[0]; if (!f) return;
+  const r = await uploadBigImage('kop', f, 1600); if (!r.success) return;
+  window._kop = r.data.url; showImgPrev('kop'); toast('Kop diunggah. Klik Simpan Pengaturan untuk menerapkannya.');
+}
+async function pickBg(i) {
+  const f = i.files[0]; if (!f) return;
+  const r = await uploadBigImage('bg', f, 1920); if (!r.success) return;
+  window._bg = r.data.url; showImgPrev('bg'); toast('Background diunggah. Klik Simpan Pengaturan untuk menerapkannya.');
+}
+function removeImg(kind) { window['_' + kind] = ''; showImgPrev(kind); }
 async function saveApp() {
-  const o = { logoUrl: window._logo, taAktif: $('pTa').value, ujianAktif: $('pUj').value, fotoRaport: $('pFoto').checked ? 'Y' : 'N' }; document.querySelectorAll('[data-p]').forEach(i => o[i.dataset.p] = i.value);
-  const r = await call('saveProfil', TOKEN, o); if (r.success) { toast(r.message); OPSI.aktif = { ta: o.taAktif, ujian: o.ujianAktif, foto: o.fotoRaport === 'Y' }; applyBrand({ namaApp: o.namaApp, nama: o.nama, logoUrl: o.logoUrl }); }
+  const o = { logoUrl: window._logo, kopUrl: window._kop, bgUrl: window._bg, taAktif: $('pTa').value, ujianAktif: $('pUj').value, fotoRaport: $('pFoto').checked ? 'Y' : 'N' }; document.querySelectorAll('[data-p]').forEach(i => o[i.dataset.p] = i.value);
+  const r = await call('saveProfil', TOKEN, o); if (r.success) { toast(r.message); OPSI.aktif = { ta: o.taAktif, ujian: o.ujianAktif, foto: o.fotoRaport === 'Y' }; applyBrand(o); }
 }
 function loadUrutan() {
   $('urutBox').innerHTML = `<div class="card-x mt-3"><b>Urutan Mata Pelajaran</b><p class="muted mb-2">Atur dengan panah; berlaku pada raport dan leger.</p><ul class="list-group" id="urutList">${(OPSI.mapel || []).map(m => `<li class="list-group-item d-flex justify-content-between align-items-center" data-id="${m.ID}"><span>${esc(m.nama)}</span><span><button class="btn btn-sm btn-outline-secondary" onclick="mv(this,-1)">^</button> <button class="btn btn-sm btn-outline-secondary" onclick="mv(this,1)">v</button></span></li>`).join('')}</ul><button class="btn btn-primary mt-2" onclick="saveUrut()">Simpan Urutan</button></div>`;

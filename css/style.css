@@ -38,3 +38,18 @@ table.t tbody tr:hover{background:var(--tint)}
 #bnav a.active{color:var(--accent);background:var(--tint);font-weight:600}}
 @media print{body *{visibility:hidden}#prevBody,#prevBody *{visibility:visible}#prevBody{position:absolute;left:0;top:0;width:100%}.raport{border:0;margin:0;padding:1.5cm}@page{size:A4;margin:0}}
 .qr canvas{display:none}.qr img{display:block}
+/* -- Background kustom aplikasi (opsional, diatur Admin) -- */
+body{background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed}
+body.has-bg .login-wrap{background:linear-gradient(135deg,rgba(11,58,92,.55),rgba(2,132,199,.4) 55%,rgba(125,211,252,.3))}
+body.has-bg .login-card{background:rgba(255,255,255,.92);backdrop-filter:blur(10px)}
+body.has-bg .card-x{background:rgba(255,255,255,.90);backdrop-filter:blur(6px)}
+body.has-bg .sidebar{background:linear-gradient(180deg,rgba(11,58,92,.92),rgba(0,97,148,.86));backdrop-filter:blur(6px)}
+body.has-bg .topbar{background:rgba(255,255,255,.85);backdrop-filter:blur(6px)}
+[data-theme="dark"] body.has-bg .login-card{background:rgba(19,28,46,.88);backdrop-filter:blur(10px)}
+[data-theme="dark"] body.has-bg .card-x{background:rgba(19,28,46,.82);backdrop-filter:blur(6px)}
+[data-theme="dark"] body.has-bg .sidebar{background:linear-gradient(180deg,rgba(11,18,32,.92),rgba(19,28,46,.88));backdrop-filter:blur(6px)}
+[data-theme="dark"] body.has-bg .topbar{background:rgba(19,28,46,.85);backdrop-filter:blur(6px)}
+/* -- Foto guru menonjol di dashboard -- */
+.hero-avatar{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.85);box-shadow:0 4px 14px rgba(0,0,0,.3);flex:none}
+/* -- Pratinjau unggahan gambar besar (kop, background) -- */
+.img-prev{max-width:100%;max-height:140px;border-radius:8px;border:1px solid var(--border);object-fit:cover}
