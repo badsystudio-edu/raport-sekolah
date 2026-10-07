@@ -279,26 +279,35 @@ function imgToData(file, max) { // kecilkan gambar di browser agar muat di sel S
     im.onerror = bad; im.src = u;
   });
 }
-function fileToResizedBlob(file, maxDim, quality) { // untuk kop/background: disimpan di Drive, boleh lebih besar & lebih tajam
+// Kompres gambar bertahap sampai muat di satu sel Google Sheets (maks ~48.000
+// karakter), sambil menjaga kualitas setinggi mungkin: dicoba dari ukuran dan
+// kualitas terbaik dulu, baru diperkecil kalau belum muat. Dipakai untuk Kop
+// Raport & Background supaya tidak bergantung pada izin Google Drive sama
+// sekali (beberapa akun Google Workspace sekolah membatasi akses Drive dari
+// skrip, menyebabkan unggahan lewat Drive gagal dengan "Akses ditolak").
+function shrinkToFit(file, maxDims, cap) {
   return new Promise((ok, bad) => {
     const im = new Image(), u = URL.createObjectURL(file);
     im.onload = () => {
-      const s = Math.min(1, maxDim / Math.max(im.width, im.height)), c = document.createElement('canvas');
-      c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
-      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(u);
-      c.toBlob(blob => {
-        const fr = new FileReader();
-        fr.onload = () => ok({ b64: fr.result.split(',')[1], mime: 'image/jpeg' });
-        fr.onerror = bad; fr.readAsDataURL(blob);
-      }, 'image/jpeg', quality || 0.85);
+      const quals = [0.92, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25];
+      const tryDim = wi => {
+        if (wi >= maxDims.length) { URL.revokeObjectURL(u); return bad(new Error('Gambar terlalu detail untuk dikecilkan cukup kecil.')); }
+        const s = Math.min(1, maxDims[wi] / Math.max(im.width, im.height)), c = document.createElement('canvas');
+        c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        const tryQ = qi => {
+          if (qi >= quals.length) return tryDim(wi + 1); // masih kebesaran -> perkecil dimensi, ulangi dari kualitas terbaik
+          const d = c.toDataURL('image/jpeg', quals[qi]);
+          if (d.length <= cap) { URL.revokeObjectURL(u); return ok(d); }
+          tryQ(qi + 1);
+        };
+        tryQ(0);
+      };
+      tryDim(0);
     };
-    im.onerror = bad; im.src = u;
+    im.onerror = () => { URL.revokeObjectURL(u); bad(new Error('Gambar tidak dapat dibaca.')); };
+    im.src = u;
   });
-}
-async function uploadBigImage(kind, file, maxDim) { // kind: 'kop' atau 'bg'
-  const { b64, mime } = await fileToResizedBlob(file, maxDim, kind === 'bg' ? 0.82 : 0.9);
-  return call('uploadImage', TOKEN, kind, b64, mime, file.name);
 }
 async function viewApp() {
   const r = await call('listData', TOKEN, 'ProfilSekolah'), p = (r.data && r.data.rows[0]) || {};
@@ -318,13 +327,13 @@ async function pickLogo(i) { const f = i.files[0]; if (!f) return; try { window.
 function showImgPrev(kind) { const el = $(kind + 'Prev'), url = window['_' + kind]; el.innerHTML = url ? `<img src="${esc(url)}" class="img-prev">` : '<i class="bi bi-image fs-1 muted"></i>'; }
 async function pickKop(i) {
   const f = i.files[0]; if (!f) return;
-  const r = await uploadBigImage('kop', f, 1600); if (!r.success) return;
-  window._kop = r.data.url; showImgPrev('kop'); toast('Kop diunggah. Klik Simpan Pengaturan untuk menerapkannya.');
+  try { window._kop = await shrinkToFit(f, [1500, 1300, 1100, 900, 700, 550, 400], 48000); showImgPrev('kop'); toast('Kop siap. Klik Simpan Pengaturan untuk menerapkannya.'); }
+  catch (e) { toast('Gambar kop tidak dapat diproses: ' + e.message, 'danger'); }
 }
 async function pickBg(i) {
   const f = i.files[0]; if (!f) return;
-  const r = await uploadBigImage('bg', f, 1920); if (!r.success) return;
-  window._bg = r.data.url; showImgPrev('bg'); toast('Background diunggah. Klik Simpan Pengaturan untuk menerapkannya.');
+  try { window._bg = await shrinkToFit(f, [1600, 1300, 1000, 800, 600, 450], 48000); showImgPrev('bg'); toast('Background siap. Klik Simpan Pengaturan untuk menerapkannya.'); }
+  catch (e) { toast('Gambar background tidak dapat diproses: ' + e.message, 'danger'); }
 }
 function removeImg(kind) { window['_' + kind] = ''; showImgPrev(kind); }
 async function saveApp() {
