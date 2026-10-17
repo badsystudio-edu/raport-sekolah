@@ -124,12 +124,12 @@ async function loadRekap() {
 }
 const kelasNama = id => ((OPSI.kelas || []).find(k => k.ID === id) || {}).nama || '';
 function kopHtml(p) { // kop raport: pakai gambar unggahan Admin jika ada, atau fallback logo+teks
-  if (p.kopUrl) return `<img src="${esc(p.kopUrl)}" style="width:100%;display:block;margin-bottom:6px">`;
+  if (p.kopUrl) return `<img src="${esc(p.kopUrl)}" alt="Kop">`;
   return `${p.logoUrl ? `<img src="${esc(p.logoUrl)}" style="height:60px;float:left">` : ''}<b style="font-size:16px">${esc((p.nama || '').toUpperCase())}</b><br>${esc(p.alamat)} * ${esc(p.kontak)}`;
 }
 function printRekap() {
   const d = window._rekap, m = window._rekapM, p = d.profil;
-  $('prevBody').innerHTML = `<div class="raport" style="max-width:none"><div class="kop">${kopHtml(p)}</div><h6 class="text-center my-2">LEGER NILAI ${esc(m.ujian)} - KELAS ${esc(kelasNama(m.kelasId))} - ${esc(m.ta)} ${esc(m.semester)}</h6>` + $('rekapTbl').innerHTML + `<table style="border:0;margin-top:24px;width:60%;margin-left:auto"><tr style="text-align:center"><td style="border:0">Wali Kelas<br><br><br>(................)</td><td style="border:0">Kepala Sekolah<br><br><br><u>${esc(p.kepsek)}</u><br>NIP. ${esc(p.nip)}</td></tr></table></div>`;
+  $('prevBody').innerHTML = `<div class="raport" style="max-width:none"><div class="kop">${kopHtml(p)}</div><h6 class="text-center my-2">LEGER NILAI ${esc(m.ujian)} - KELAS ${esc(kelasNama(m.kelasId))} - ${esc(m.ta)} ${esc(m.semester)}</h6>` + $('rekapTbl').innerHTML + `<table style="border:0;margin-top:24px;width:60%;margin-left:auto"><tr style="text-align:center"><td style="border:0">Wali Kelas<br><br><br>${d.waliKelasNama ? `<u>${esc(d.waliKelasNama)}</u>` : '(................)'}</td><td style="border:0">Kepala Sekolah<br><br><br><u>${esc(p.kepsek)}</u><br>NIP. ${esc(p.nip)}</td></tr></table></div>`;
   window._land = true; $('pdfBtn').style.display = 'none'; $('pdfLink').innerHTML = ''; bootstrap.Modal.getOrCreateInstance($('prevModal')).show();
 }
 function exportLeger() {
@@ -163,12 +163,16 @@ function renderRaport() {
   const { d, m } = window._rap, p = d.profil, sid = $('rapSiswa').value, foto = $('rapFoto').checked, enc = encodeURIComponent;
   const rows = b => { let g = ''; return d.mapel.map((x, j) => { const n = b.nilai[j], h = x.kelompok && x.kelompok !== g ? `<tr><td colspan="7"><b>${esc(x.kelompok)}</b></td></tr>` : ''; g = x.kelompok || g; return h + `<tr><td>${j + 1}</td><td>${esc(x.nama)}</td><td>${x.KKM}</td><td>${n === null ? '-' : n}</td><td>${n === null ? '' : terbilang(n)}</td><td>${n === null ? '-' : predikat(n, p)}</td><td>${n === null ? '-' : n >= x.KKM ? 'Tuntas' : 'Belum Tuntas'}</td></tr>`; }).join(''); };
   $('prevBody').innerHTML = d.baris.filter(b => !sid || b.siswa.ID === sid).map(b => `<div class="raport"><div class="kop">${kopHtml(p)}</div>
-  <div class="text-center mb-2"><b>LAPORAN PENILAIAN HASIL BELAJAR<br>${esc(m.ujian)} SEMESTER ${esc(m.semester)} - ${esc(m.ta)}</b></div>
-  <p>${foto && b.siswa.foto ? `<img src="${esc(b.siswa.foto)}" style="height:80px;float:right;margin-left:8px">` : ''}Nama: <b>${esc(b.siswa.nama)}</b> &nbsp; NIS/NISN: ${esc(b.siswa.NIS)} / ${esc(b.siswa.NISN)}</p>
+  <div class="text-center mb-2"><b>LAPORAN<br>PENILAIAN HASIL BELAJAR<br>${esc(m.ujian).toUpperCase()} SEMESTER ${esc(m.semester).toUpperCase()} - ${esc(m.ta)}</b></div>
+  ${foto && b.siswa.foto ? `<img src="${esc(b.siswa.foto)}" style="height:85px;float:right;margin-left:8px">` : ''}
+  <table style="border:0;width:100%;margin-bottom:6px"><tr><td style="border:0;width:30%;vertical-align:top">Nama Sekolah</td><td style="border:0;width:2%;vertical-align:top">:</td><td style="border:0;width:33%;vertical-align:top">${esc(p.nama)}</td><td style="border:0;width:17%;vertical-align:top">Kelas</td><td style="border:0;width:2%;vertical-align:top">:</td><td style="border:0;vertical-align:top">${esc(kelasNama(m.kelasId))}</td></tr>
+  <tr><td style="border:0;vertical-align:top">Alamat Sekolah</td><td style="border:0;vertical-align:top">:</td><td style="border:0;vertical-align:top">${esc(p.alamat)}</td><td style="border:0;vertical-align:top">Semester</td><td style="border:0;vertical-align:top">:</td><td style="border:0;vertical-align:top">${esc(m.semester)}</td></tr>
+  <tr><td style="border:0;vertical-align:top">Nama Peserta Didik</td><td style="border:0;vertical-align:top">:</td><td style="border:0;vertical-align:top"><b>${esc(b.siswa.nama)}</b></td><td style="border:0;vertical-align:top">Tahun Pelajaran</td><td style="border:0;vertical-align:top">:</td><td style="border:0;vertical-align:top">${esc(m.ta)}</td></tr>
+  <tr><td style="border:0;vertical-align:top">Nomor Induk / NISN</td><td style="border:0;vertical-align:top">:</td><td style="border:0;vertical-align:top" colspan="4">${esc(b.siswa.NIS)} / ${esc(b.siswa.NISN)}</td></tr></table>
   <table><thead><tr><th>No</th><th>Mata Pelajaran</th><th>KKM</th><th>Nilai</th><th>Terbilang</th><th>Huruf</th><th>Ket.</th></tr></thead><tbody>${rows(b)}
   <tr><td colspan="3"><b>Jumlah</b></td><td colspan="4">${b.jumlah}</td></tr><tr><td colspan="3"><b>Rata-rata</b></td><td colspan="4">${b.rata}</td></tr></tbody></table>
   <p class="mt-2">Peringkat: <b>${b.peringkat}</b> dari ${d.baris.length} siswa &nbsp;|&nbsp; Sakit ${b.absensi.sakit || 0}, Izin ${b.absensi.izin || 0}, Alpa ${b.absensi.alpa || 0}<br>Profil Karakter P3: ${esc(b.sikap.p3 || '-')} &nbsp; Sikap: ${esc(b.sikap.sikap || '-')} &nbsp; Ekskul: ${esc(b.sikap.ekskul || '-')}<br>Catatan wali kelas: ${esc(b.catatan || '-')}</p>
-  <table style="border:0;margin-top:30px"><tr style="text-align:center"><td style="border:0">Orang Tua/Wali<br><br><br><br>(................)</td><td style="border:0">Wali Kelas<br><br><br><br>(................)</td><td style="border:0">Kepala Sekolah<br><br><br><br><u>${esc(p.kepsek)}</u><br>NIP. ${esc(p.nip)}</td></tr></table>
+  <table style="border:0;margin-top:20px"><tr style="text-align:center"><td style="border:0">Orang Tua/Wali<br><br><br><br>${b.waliMurid ? `<u>${esc(b.waliMurid)}</u>` : '(................)'}</td><td style="border:0">Wali Kelas<br><br><br><br>${d.waliKelasNama ? `<u>${esc(d.waliKelasNama)}</u>` : '(................)'}</td><td style="border:0">Kepala Sekolah<br><br><br><br><u>${esc(p.kepsek)}</u><br>NIP. ${esc(p.nip)}</td></tr></table>
   <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:10px"><div class="qr" data-q="${esc(d.url + '?v=' + b.siswa.ID + '&t=' + enc(m.ta) + '&s=' + enc(m.semester) + '&u=' + enc(m.ujian) + '&k=' + b.kode)}"></div><span>Pindai QR untuk memverifikasi keaslian dokumen.</span></div></div>`).join('') || '<p>Belum ada siswa.</p>';
   if (typeof QRCode !== 'undefined') document.querySelectorAll('#prevBody .qr').forEach(e => new QRCode(e, { text: e.dataset.q, width: 70, height: 70 }));
   window._land = false; $('pdfBtn').style.display = ''; bootstrap.Modal.getOrCreateInstance($('prevModal')).show();
